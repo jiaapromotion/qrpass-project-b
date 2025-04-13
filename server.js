@@ -32,17 +32,17 @@ app.post("/register", async (req, res) => {
       scopes: ["https://www.googleapis.com/auth/spreadsheets"],
     });
 
-    const sheets = google.sheets({ version: "v4", auth });
-    const spreadsheetId = process.env.SHEET_ID;
+const SPREADSHEET_ID = '1ZnKm2cma8y9k6WMcT1YG3tqCjqq2VBILDEAaCBcyDtA';
 
-    await sheets.spreadsheets.values.append({
-      spreadsheetId,
-      range: "Sheet1!A:D",
-      valueInputOption: "USER_ENTERED",
-      requestBody: {
-        values: [[name, email, phone, amount]],
-      },
-    });
+await sheets.spreadsheets.values.append({
+  spreadsheetId: SPREADSHEET_ID,
+  range: 'Sheet1!A:D', // Make sure your sheet has these columns
+  valueInputOption: 'USER_ENTERED',
+  resource: {
+    values: [[name, email, phone, amount]],
+  },
+});
+
 
     // WhatsApp Message via AiSensy
     const waRes = await fetch("https://backend.aisensy.com/campaign/t1/api/v2/push", {
