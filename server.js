@@ -2,6 +2,7 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
 const fs = require("fs");
+const fetch = require("node-fetch");
 const { google } = require("googleapis");
 const path = require("path");
 require("dotenv").config();
@@ -44,7 +45,7 @@ app.post("/register", async (req, res) => {
     });
 
     // WhatsApp Message via AiSensy
-    await fetch("https://backend.aisensy.com/campaign/t1/api/v2/push", {
+    const waRes = await fetch("https://backend.aisensy.com/campaign/t1/api/v2/push", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -60,11 +61,14 @@ app.post("/register", async (req, res) => {
       }),
     });
 
-    res.send("Registration successful!");
+    const waJson = await waRes.json();
+    console.log("✅ WhatsApp API response:", waJson);
+
+    res.send("✅ Registration successful! You’ll get WhatsApp confirmation shortly.");
   } catch (error) {
-    console.error("Error:", error.message);
-    res.status(500).send("Something went wrong.");
+    console.error("❌ Registration failed:", error);
+    res.status(500).send("Something went wrong on the server.");
   }
 });
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
