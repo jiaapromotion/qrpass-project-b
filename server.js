@@ -1,74 +1,49 @@
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const cors = require("cors");
-const fs = require("fs");
-const fetch = require("node-fetch");
 const { google } = require("googleapis");
 const path = require("path");
+const fs = require("fs");
 require("dotenv").config();
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 app.use(express.static("public"));
 
 const PORT = process.env.PORT || 3000;
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+const auth = new google.auth.GoogleAuth({
+  keyFile: path.join(__dirname, "credentials.json"),
+  scopes: ["https://www.googleapis.com/auth/spreadsheets"],
 });
+
+const SPREADSHEET_ID = "1ZnKm2cma8y9k6WMcT1YG3tqCjqq2VBILDEAaCBcyDtA";
 
 app.post("/register", async (req, res) => {
-  const { name, email, phone, amount } = req.body;
-
-  if (!name || !email || !phone || !amount) {
-    return res.status(400).send("All fields are required.");
-  }
-
   try {
-    const auth = new google.auth.GoogleAuth({
-      keyFile: "credentials.json",
-      scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-    });
+    const { name, email, phone, amount } = req.body;
 
-const SPREADSHEET_ID = '1ZnKm2cma8y9k6WMcT1YG3tqCjqq2VBILDEAaCBcyDtA';
+    const client = await auth.getClient();
+    const sheets = google.sheets({ version: "v4", auth: client });
 
-await sheets.spreadsheets.values.append({
-  spreadsheetId: SPREADSHEET_ID,
-  range: 'Sheet1!A:D', // Make sure your sheet has these columns
-  valueInputOption: 'USER_ENTERED',
-  resource: {
-    values: [[name, email, phone, amount]],
-  },
-});
-
-
-    // WhatsApp Message via AiSensy
-    const waRes = await fetch("https://backend.aisensy.com/campaign/t1/api/v2/push", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.AISENSY_API_KEY}`,
+    await sheets.spreadsheets.values.append({
+      spreadsheetId: SPREADSHEET_ID,
+      range: "Sheet1!A:D",
+      valueInputOption: "USER_ENTERED",
+      resource: {
+        values: [[name, email, phone, amount]],
       },
-      body: JSON.stringify({
-        campaignName: "QRPass Registration",
-        destination: `91${phone}`,
-        user: {
-          name,
-          email,
-        },
-      }),
     });
 
-    const waJson = await waRes.json();
-    console.log("✅ WhatsApp API response:", waJson);
-
-    res.send("✅ Registration successful! You’ll get WhatsApp confirmation shortly.");
+    res.status(200).send("Registration successful!");
   } catch (error) {
-    console.error("❌ Registration failed:", error);
+    console.error("Registration failed:", error.message);
     res.status(500).send("Something went wrong on the server.");
   }
 });
 
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
